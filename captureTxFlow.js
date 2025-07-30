@@ -1,3 +1,5 @@
+require('dotenv').config();
+console.log("Loaded API key:", process.env.ETHERSCAN_API_KEY);
 const fs = require('fs');
 const axios = require('axios');
 require('dotenv').config();

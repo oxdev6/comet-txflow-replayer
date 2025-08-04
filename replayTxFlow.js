@@ -25,6 +25,22 @@ const argv = yargs(hideBin(process.argv))
     type: 'boolean',
     description: 'Suppress verbose logging',
   })
+  .option('verbose', {
+    type: 'boolean',
+    description: 'Extra debug output',
+  })
+  .option('from-block', {
+    type: 'number',
+    description: 'Only replay txs with blockNumber >= this',
+  })
+  .option('to-block', {
+    type: 'number',
+    description: 'Only replay txs with blockNumber <= this',
+  })
+  .option('quiet', {
+    type: 'boolean',
+    description: 'Suppress verbose logging',
+  })
   .help()
   .argv;
 
@@ -68,7 +84,12 @@ async function replayTxFlow() {
   const limit = argv.limit ?? txData.length;
 
   for (let i = 0; i < limit; i++) {
-    const txHash = txData[i].hash;
+    const raw = txData[i];
+    if ((argv['from-block'] && raw.blockNumber < argv['from-block']) || (argv['to-block'] && raw.blockNumber > argv['to-block'])) {
+      continue;
+    }
+    const txHash = raw.hash;
+    // txHash defined above
     if (!argv.quiet && !argv.json) {
       console.log(`🔍 [${i + 1}] Tx: ${txHash}`);
     }

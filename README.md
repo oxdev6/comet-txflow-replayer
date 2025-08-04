@@ -102,6 +102,9 @@ The `replayTxFlow.js` script now supports multiple output and filtering modes vi
 | `--json` | Stream one JSON object per line (ND-JSON) to *stdout* — great for piping into other tools |
 | `--quiet` | Suppress the colourful human-readable logs (still streams JSON if `--json` is set) |
 | `--output <file>` | Write an **array** of processed tx objects to the given file |
+| `--verbose` | Extra debug timings / fetch details |
+| `--from-block N` | Skip txs before block N |
+| `--to-block N` | Skip txs after block N |
 
 ### Quick recipes
 

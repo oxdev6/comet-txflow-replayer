@@ -1,7 +1,10 @@
 {
   "name": "comet-txflow-replayer",
   "version": "1.0.0",
-  "description": "",
+  "description": "CLI to replay and inspect Compound III (Comet) transactions from a flow.json log.",
+  "bin": {
+    "comet-txflow": "./replayTxFlow.js"
+  },
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -20,6 +23,7 @@
     "cli-table3": "^0.6.5",
     "dotenv": "^17.2.1",
     "ethers": "^6.15.0",
-    "viem": "^2.33.2"
+    "viem": "^2.33.2",
+    "yargs": "^18.0.0"
   }
 }

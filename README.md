@@ -25,6 +25,24 @@ npm install
 
 ---
 
+## Install
+
+### Global (recommended)
+```bash
+npm install -g comet-txflow-replayer
+comet-txflow --help
+```
+
+### Local / project usage
+```bash
+npm install --save-dev comet-txflow-replayer
+npx comet-txflow --limit 5 --json
+```
+
+Make sure you have either `ALCHEMY_API_KEY` **or** any `ETH_RPC_URL` in your `.env` file so the replay can fetch on-chain data.
+
+---
+
 ##  Getting Started
 
 ### 1. Clone the Repository

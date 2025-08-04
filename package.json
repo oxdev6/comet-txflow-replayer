@@ -3,7 +3,8 @@
   "version": "1.1.0",
   "description": "CLI to replay and inspect Compound III (Comet) transactions from a flow.json log.",
   "bin": {
-    "comet-txflow": "./replayTxFlow.js"
+    "comet-txflow": "./replayTxFlow.js",
+    "comet-txflow-replayer": "./replayTxFlow.js"
   },
   "main": "index.js",
   "scripts": {

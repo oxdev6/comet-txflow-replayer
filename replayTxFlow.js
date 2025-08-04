@@ -2,6 +2,30 @@ require('dotenv').config();
 const fs = require('fs');
 const { Alchemy, Network } = require('alchemy-sdk');
 const { ethers } = require('ethers');
+const yargs = require('yargs');
+const { hideBin } = require('yargs/helpers');
+
+// Parse CLI flags
+const argv = yargs(hideBin(process.argv))
+  .option('json', {
+    type: 'boolean',
+    description: 'Output in JSON format',
+  })
+  .option('filter', {
+    type: 'string',
+    choices: ['failed', 'successful'],
+    description: 'Filter transactions by status',
+  })
+  .option('limit', {
+    type: 'number',
+    description: 'Limit the number of transactions replayed',
+  })
+  .option('quiet', {
+    type: 'boolean',
+    description: 'Suppress verbose logging',
+  })
+  .help()
+  .argv;
 
 // Setup Alchemy
 const alchemy = new Alchemy({
@@ -35,39 +59,73 @@ const erc20Iface = new ethers.Interface([
 const transferTopic = erc20Iface.getEvent("Transfer").topicHash;
 
 async function replayTxFlow() {
-  console.log(`\n🔁  Replaying ${txData.length} transactions…\n`);
+  if (!argv.quiet && !argv.json) {
+    console.log(`\n🔁  Replaying ${txData.length} transactions…\n`);
+  }
 
-  for (let i = 0; i < txData.length; i++) {
+  const collected = [];
+  const limit = argv.limit ?? txData.length;
+
+  for (let i = 0; i < limit; i++) {
     const txHash = txData[i].hash;
-    console.log(`🔍 [${i + 1}] Tx: ${txHash}`);
+    if (!argv.quiet && !argv.json) {
+      console.log(`🔍 [${i + 1}] Tx: ${txHash}`);
+    }
 
     try {
       const tx = await alchemy.core.getTransaction(txHash);
       const receipt = await alchemy.core.getTransactionReceipt(txHash);
       const block = await alchemy.core.getBlock(tx.blockNumber);
 
-      console.log(`   ⛓  Block: ${tx.blockNumber} (${new Date(block.timestamp * 1e3).toISOString()})`);
+      const timestampIso = new Date(block.timestamp * 1e3).toISOString();
+      const txInfo = {
+        txHash,
+        block: tx.blockNumber,
+        timestamp: timestampIso,
+        from: tx.from,
+        to: tx.to,
+        valueEth: ethers.formatEther(tx.value.toString()),
+        gasUsed: receipt.gasUsed.toString(),
+        status: receipt.status,
+      };
+
+      // Attempt decode
+      let decoded;
+      try {
+        decoded = iface.parseTransaction({ data: tx.input || tx.data });
+        txInfo.function = decoded.name;
+        txInfo.args = Array.from(decoded.args, (v) => (typeof v === 'bigint' ? v.toString() : v));
+      } catch {}
+
+      // Filter flag handling
+      if (argv.filter === 'failed' && receipt.status !== 0) continue;
+      if (argv.filter === 'successful' && receipt.status !== 1) continue;
+
+      if (argv.json) {
+        console.log(JSON.stringify(txInfo, null, 2));
+      }
+
+      if (argv.output) {
+        collected.push(txInfo);
+      }
+
+      if (!argv.quiet && !argv.json) {
+        console.log(`   ⛓  Block: ${txInfo.block} (${txInfo.timestamp})`);
       console.log(`   📨  From : ${tx.from}`);
       console.log(`   📥  To   : ${tx.to}`);
       const valueEth = ethers.formatEther(tx.value.toString());
       console.log(`   💰  Value: ${valueEth} ETH`);
       console.log(`   ⛽  Gas  : ${receipt.gasUsed.toString()}`);
 
-      // Decode input
-      try {
-        const decoded = iface.parseTransaction({ data: tx.input || tx.data });
-        console.log(`\n   🔎  Decoded Call:`);
-        console.log(`       Function: ${decoded.name}`);
-        decoded.args.forEach((arg, index) => {
-          console.log(`       Arg[${index}]: ${arg}`);
-        });
-      } catch (decodeErr) {
-        console.log(`\n   ⚠️  Could not decode input (non-matching ABI or fallback).`);
+      if (decoded) {
+        console.log(`   🔎  Function: ${decoded.name}`);
+        decoded.args.forEach((arg, index) => console.log(`       Arg[${index}]: ${arg}`));
+      } else {
+        console.log(`   ⚠️  Could not decode input (non-matching ABI or fallback).`);
       }
 
       // Decode ERC20 Transfer logs
       const transferLogs = receipt.logs.filter(log => log.topics[0] === transferTopic);
-
       if (transferLogs.length) {
         console.log(`\n   📤  ERC20 Transfers:`);
         for (const log of transferLogs) {
@@ -77,16 +135,22 @@ async function replayTxFlow() {
             const to = parsed.args.to;
             const value = ethers.formatUnits(parsed.args.value.toString(), 18); // assume 18 decimals
             console.log(`       ${from} → ${to}: ${value} tokens (${log.address})`);
-          } catch (logErr) {
+          } catch {
             console.log(`       ⚠️  Failed to parse log from ${log.address}`);
           }
         }
       }
 
       console.log(); // newline
+    }
     } catch (err) {
       console.error(`   ❌  ${err.message}\n`);
     }
+  }
+
+  if (argv.output) {
+    fs.writeFileSync(argv.output, JSON.stringify(collected, null, 2));
+    if (!argv.quiet) console.log(`📝  Saved output to ${argv.output}`);
   }
 }
 

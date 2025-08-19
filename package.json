@@ -15,9 +15,7 @@
     "start:api": "node server.js",
     "start:web": "NEXT_PUBLIC_API_BASE=http://localhost:3001 npm run dev --prefix web-dashboard",
     "dev": "concurrently -k -n api,web -c blue,green \"npm run start:api\" \"npm run start:web\"",
-    "copilot:scan": "node packages/copilot-cli/bin.js scan .",
-    "copilot:apply:gas": "node packages/copilot-cli/bin.js apply . --rule ARBI-GASPRICE-001 --write",
-    "copilot:apply:events": "node packages/copilot-cli/bin.js apply . --rule ARBI-EVENT-LARGE-005 --write"
+    "copilot:scan": "node packages/copilot-cli/bin.js ."
   },
   "keywords": [],
   "author": "",

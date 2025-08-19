@@ -2,20 +2,13 @@
   "name": "comet-txflow-replayer",
   "version": "1.1.0",
   "description": "CLI to replay and inspect Compound III (Comet) transactions from a flow.json log.",
-  "workspaces": [
-    "packages/*"
-  ],
   "bin": {
     "comet-txflow": "./tui.jsx"
   },
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dashboard": "cd web-dashboard && npm run dev",
-    "start:api": "node server.js",
-    "start:web": "NEXT_PUBLIC_API_BASE=http://localhost:3001 npm run dev --prefix web-dashboard",
-    "dev": "concurrently -k -n api,web -c blue,green \"npm run start:api\" \"npm run start:web\"",
-    "copilot:scan": "node packages/copilot-cli/bin.js ."
+    "dashboard": "cd web-dashboard && npm run dev"
   },
   "keywords": [],
   "author": "",
@@ -40,7 +33,6 @@
     "yargs": "^18.0.0"
   },
   "devDependencies": {
-    "tsx": "^4.20.3",
-    "concurrently": "^9.1.2"
+    "tsx": "^4.20.3"
   }
 }

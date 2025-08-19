@@ -4,8 +4,6 @@ import dynamic from 'next/dynamic';
 // @ts-ignore - token map from root
 import tokenMap from '../../lib/tokenMapData.cjs';
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_BASE as string) || 'http://localhost:3001';
-
 type Tx = {
   txHash: string;
   block: number;
@@ -119,7 +117,7 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/transactions?limit=100`);
+        const res = await fetch('http://localhost:3001/api/transactions?limit=100');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setTxs(Array.isArray(data) ? data : []);
@@ -134,7 +132,7 @@ export default function Home() {
     if (!autoRefresh) return;
     const fetchData = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/transactions?limit=100`);
+        const res = await fetch('http://localhost:3001/api/transactions?limit=100');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setTxs(Array.isArray(data) ? data : []);

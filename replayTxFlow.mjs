@@ -19,15 +19,10 @@ const erc20Interface = new ethers.Interface([
 const transferTopic = erc20Interface.getEvent('Transfer').topicHash;
 
 export async function replayTxFlow(flags = {}) {
-  // Choose provider: prefer ETH_RPC_URL if provided; otherwise use Alchemy
-  const rpcUrl = process.env.ETH_RPC_URL;
-  const useRpc = typeof rpcUrl === 'string' && rpcUrl.length > 0;
-  const provider = useRpc
-    ? new ethers.JsonRpcProvider(rpcUrl)
-    : new Alchemy({
-        apiKey: process.env.ALCHEMY_API_KEY || 'E_rpHj3cSkfFjnpiqULx-',
-        network: Network.ETH_MAINNET,
-      });
+  const alchemy = new Alchemy({
+    apiKey: process.env.ALCHEMY_API_KEY || 'E_rpHj3cSkfFjnpiqULx-',
+    network: Network.ETH_MAINNET,
+  });
 
   const txData = JSON.parse(fs.readFileSync('flow.json', 'utf-8'));
   const results = [];
@@ -45,11 +40,9 @@ export async function replayTxFlow(flags = {}) {
 
     const txHash = raw.hash;
     try {
-      const tx = useRpc ? await provider.getTransaction(txHash) : await provider.core.getTransaction(txHash);
-      const receipt = useRpc ? await provider.getTransactionReceipt(txHash) : await provider.core.getTransactionReceipt(txHash);
-      const rawBlockNum = tx?.blockNumber ?? raw.blockNumber ?? raw.block;
-      const numericBlock = typeof rawBlockNum === 'string' ? Number(rawBlockNum) : Number(rawBlockNum);
-      const block = useRpc ? await provider.getBlock(numericBlock) : await provider.core.getBlock(numericBlock);
+      const tx = await alchemy.core.getTransaction(txHash);
+      const receipt = await alchemy.core.getTransactionReceipt(txHash);
+      const block = await alchemy.core.getBlock(tx.blockNumber);
 
       const timestampIso = new Date(block.timestamp * 1e3).toISOString();
       const txInfo = {
@@ -87,32 +80,7 @@ export async function replayTxFlow(flags = {}) {
 
       results.push(txInfo);
     } catch (err) {
-      // Fallback: return minimal info from flow.json so the UI can still render
-      try {
-        const fallback = {
-          txHash,
-          block: Number(raw.blockNumber ?? raw.block) || undefined,
-          timestamp: (() => {
-            const ts = Number(raw.timeStamp || raw.timestamp);
-            return Number.isFinite(ts) ? new Date(ts * 1e3).toISOString() : undefined;
-          })(),
-          from: raw.from,
-          to: raw.to,
-          valueEth: (() => {
-            try { return ethers.formatEther(BigInt(raw.value || '0')); } catch { return '0'; }
-          })(),
-          gasUsed: String(raw.gasUsed || ''),
-          status: (() => {
-            if (raw.txreceipt_status != null) return Number(raw.txreceipt_status);
-            if (raw.isError != null) return raw.isError === '0' ? 1 : 0;
-            return undefined;
-          })(),
-          function: raw.functionName || undefined,
-        };
-        results.push({ ...fallback, error: err?.message || String(err) });
-      } catch {
-        results.push({ txHash, error: err?.message || String(err) });
-      }
+      results.push({ txHash, error: err?.message || String(err) });
     }
   }
 
